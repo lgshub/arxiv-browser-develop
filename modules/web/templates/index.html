@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5f0">
+  <title>Paper Atlas · arXiv Explorer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body data-page-size="{{ settings.papers_per_page }}" data-default-category="{{ settings.default_category }}" data-default-limit="{{ settings.default_limit }}" data-default-days="{{ settings.default_recent_days }}">
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Paper Atlas home"><span class="brand-icon">pa<span>↗</span></span><span>Paper Atlas<small>A place for discovery</small></span></a>
+    <div class="sidebar-heading">YOUR WORKSPACE</div>
+    <button id="new-search" class="workspace-button"><span>＋</span> New search <span class="badge">arXiv</span></button>
+    <section class="side-section">
+      <h2>Reading preferences</h2>
+      <label class="check-row"><input type="checkbox" id="sort-authors" {% if settings.sort_by_author_count %}checked{% endif %}><span>Most authors first<small>Sort the papers in this collection</small></span></label>
+      <label class="check-row"><input type="checkbox" id="include-abstract" {% if settings.include_abstract %}checked{% endif %}><span>Include abstracts<small>Fetch and display paper summaries</small></span></label>
+    </section>
+    <section class="side-section history-section">
+      <div class="section-title"><h2>Search history</h2><button class="icon-button" id="refresh-history" title="Refresh saved searches" aria-label="Refresh saved searches">↻</button></div>
+      <label class="sr-only" for="history-filter">Filter saved searches</label>
+      <input class="history-filter" id="history-filter" placeholder="Find a saved search…" type="search">
+      <div class="history-actions"><label><input type="checkbox" id="select-history"> Select all shown</label><button type="button" class="text-button" id="clear-history-selection" hidden>Clear</button><button type="button" class="delete-history-button" id="delete-history" disabled>Delete selected</button></div>
+      <p id="history-feedback" class="history-feedback" role="status" hidden></p>
+      <div id="history-list" class="history-list"><p class="muted">Loading saved searches…</p></div>
+    </section>
+    <div class="sidebar-footer"><span class="status-dot"></span> arXiv research workspace<small>Your searches stay on this server.</small></div>
+  </aside>
+
+  <main>
+    <header class="topbar"><span>Workspace <span class="slash">/</span> Literature explorer</span><span class="topbar-tag">OPEN KNOWLEDGE, YOUR WAY</span></header>
+    <div class="content">
+      <div class="hero"><div class="eyebrow">FOLLOW YOUR CURIOSITY</div><h1>Your next idea starts here<span>.</span></h1><p>Explore papers, shape your search, and keep what you discover.</p></div>
+      <form id="search-form" class="search-panel">
+        <div class="search-line"><span class="search-symbol" aria-hidden="true">⌕</span><label class="sr-only" for="keywords">Search papers</label><input id="keywords" list="keyword-history" placeholder="Search a topic, a phrase, or an author…" autocomplete="off"><datalist id="keyword-history"></datalist><label class="sr-only" for="field">Search field</label><select id="field"><option value="all">All fields</option><option value="title">Title</option><option value="abstract">Abstract</option><option value="author">Author</option></select><button type="submit" class="primary" id="search-button">Search <span>↗</span></button></div>
+        <div class="advanced-heading"><label for="expression">Expression builder</label><span>AND · OR · NOT · (parentheses)</span></div>
+        <div class="expression-layout"><div class="expression-editor"><textarea id="expression" rows="4" spellcheck="false" placeholder='cat:cs.RO AND ("robot learning" in abstract OR grasping in title) AND NOT survey'></textarea><div id="expression-suggestions" class="suggestions" hidden></div><div class="editor-footer"><span>Omit “in …” to search all fields. Quote multiword phrases.</span><button type="button" id="preview-button" class="text-button">Preview query ↗</button></div></div><div class="examples"><span class="eyebrow">TRY AN EXPRESSION</span><button type="button" data-example='cat:cs.RO AND (manipulation OR grasping)'>Robotics & manipulation <span>↗</span></button><button type="button" data-example='cat:cs.RO AND ("robot learning" in abstract OR grasping in title) AND NOT (survey in title OR review in title)'>Nested groups, fewer reviews <span>↗</span></button><button type="button" data-example='cat:cs.RO AND ("Sergey Levine" in author OR "Pieter Abbeel" in author)'>Follow researchers <span>↗</span></button></div></div>
+        <details class="syntax-help"><summary>Expression syntax & examples</summary><p><code>x AND y</code> requires both terms. <code>x OR y</code> matches either. <code>x AND NOT y</code> excludes y. <code>x not in title</code> excludes titles containing x.</p><p>Fields: <code>in title</code>, <code>in abstract</code>, <code>in author</code>, <code>in category</code>, or <code>in all</code>. Terms without a field search all fields. Use double quotes for phrases and parentheses to nest groups.</p><p>AND binds before OR. Main search terms use the selected field and are combined with the expression using AND. Start the expression with OR to use OR instead. A NOT condition needs a positive search term or category; for example, <code>cat:cs.RO AND NOT survey</code>.</p><p>Native arXiv fields work too: <code>(cat:cs.RO OR cat:cs.AI) AND ti:robot</code>. The preview shows the exact query sent to arXiv.</p></details>
+        <div class="form-bottom"><div class="search-mode-controls"><label for="search-mode">Retrieve by</label><select id="search-mode"><option value="count" {% if settings.default_mode == 'count' %}selected{% endif %}>By paper count</option><option value="days" {% if settings.default_mode == 'days' %}selected{% endif %}>Within recent days</option></select><span id="count-options" class="limit-control"><label for="limit">Paper limit</label><input id="limit" type="number" min="1" max="{{ settings.max_limit }}" value="{{ settings.default_limit }}"></span><span id="date-options" class="limit-control" hidden><label for="recent-days">Past</label><input id="recent-days" type="number" min="1" max="{{ settings.max_recent_days }}" value="{{ settings.default_recent_days }}" disabled><span>days</span></span></div><span class="autosave"><span class="status-dot"></span> Results saved automatically</span></div>
+        <p id="search-mode-hint" class="search-mode-hint">Newest submissions first. Fetch up to the selected paper limit.</p>
+        <div id="query-preview" class="query-preview" hidden><span>ARXIV QUERY</span><code id="compiled-query"></code></div>
+        <div id="form-error" class="error-message" role="alert" hidden></div>
+      </form>
+
+      <section id="progress-section" class="progress-panel" hidden aria-label="Search progress">
+        <div class="progress-heading"><div><span id="progress-state" class="eyebrow">SEARCHING ARXIV</span><h3 id="progress-title">Preparing your search…</h3></div><button class="secondary" id="cancel-button">Cancel search</button></div>
+        <progress id="progress-bar" max="100" value="0" aria-label="Papers retrieved"></progress>
+        <div class="progress-details"><span id="progress-detail"></span><span id="elapsed"></span></div>
+        <div id="job-error" class="error-message" role="alert" hidden></div>
+        <details id="activity-details"><summary>Request activity <span id="last-activity"></span></summary><div id="activity-log" class="activity-log"></div></details>
+      </section>
+
+      <section class="results-section" aria-label="Search results"><div class="results-heading"><div><div class="eyebrow" id="collection-label">YOUR READING DESK</div><h2 id="results-title">Discover something worth reading</h2><p id="results-caption">Run a search above or revisit a collection from your history.</p></div><a id="download-link" class="secondary" hidden>Download JSON ↓</a></div><div id="collection-query" class="collection-query" hidden></div><div id="results" aria-live="polite"><div class="empty-state"><div class="empty-mark">⌕</div><h3>A whole world of ideas awaits.</h3><p>Start with a topic, or use an expression to get specific.</p><button id="load-starter" class="text-button">Explore robotics papers ↗</button></div></div><div id="pagination" class="pagination" hidden><button id="previous-page" class="secondary">← Previous</button><span id="page-label"></span><button id="next-page" class="secondary">Next →</button></div></section>
+      <footer class="content-footer">Built for curious minds. Powered by arXiv.<span>Paper Atlas / Research workspace</span></footer>
+    </div>
+  </main>
+</body>
+</html>

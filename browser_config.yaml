@@ -1,0 +1,24 @@
+server:
+  host: "127.0.0.1"
+  port: 0  # 0 lets the system choose a free port on each launch.
+
+search:
+  default_mode: "count"
+  default_limit: 1000
+  max_limit: 5000
+  default_recent_days: 7
+  max_recent_days: 3650
+  default_category: "cs.RO"
+  include_abstract: false
+  api_page_size: 100
+  request_interval_seconds: 3
+  retries: 3
+  connect_timeout_seconds: 10
+  read_timeout_seconds: 45
+
+display:
+  papers_per_page: 40
+  sort_by_author_count: false
+
+storage:
+  directory: "data/searches"  # Relative to this YAML file.
